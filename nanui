@@ -1,0 +1,91 @@
+var finalhandler = require('finalhandler');
+var done = finalhandler(req, res);
+// Serve directory indexes for public/ftp folder (with icons)
+var index = serveIndex('public/ftp', {
+  'icons': true
+})
+// Serving up the public/ftp folder files
+
+// Serve up public/ftp folder files
+var serve = serveStatic('public/ftp')
+serve(req, res, function onNext(err) {
+  if (err) return done(err)
+  index(req, res, done)
+});
+
+var uuid = require('node-uuid')
+
+function assignId(req, res, next) {
+  req.id = uuid.v4()
+  next()
+}
+
+// setting up the logger
+app.use(assignId)
+app.use(morgan(':id :method :url :response-time'))
+app.use(morgan('combined', {
+  stream: aLogStream
+}))
+// app.use("/v1", apiVersion1);
+// app.use("/v2", apiVersion2);
+
+app.use(function (req, res, next) {
+  var vws = req.session.views
+  if (!vws) {
+    vws = req.session.views = {}
+  }
+  // getting the url pathname
+  var pathname = purl(req).pathname
+  // counting the views
+  vws[pathname] = (vws[pathname] || 0) + 1
+  next()
+})
+app.get('/foo', function (req, res, next) {
+  res.send('you have viewed this page ' + req.session.vws['/test'] + ' times')
+})
+
+app.use(require('less-middleware')({
+  src: __dirname + '/public',
+  compress: true
+}))
+
+app.use(function (req, res, next) {
+  req.sessionOptions.maxAge = req.session.maxAge || req.sessionOptions.maxAge
+  // This will allow you to set req.session.maxAge for letting certain sessions
+  // have a different value other than the default one.
+
+  // You have to note that the entire session object will be encoded and stored in a cookie. The
+  // maximum cookie size limit on the different browsers can then be exceeded. If the session
+  // object is large enough and it can exceed the limit of the browser when it has been encoded,
+  // what will happen in most cases is that the browser will refuse or avoid storing the cookie.
+
+  // Updating the views
+  req.session.views = (req.session.views || 0) + 1
+  // Writing the response
+  res.end(req.session.views + ' views')
+})
+
+
+
+
+const validateToken = asyncHandler(async (req, res, next) => {
+  let token;
+  let authHeader = req.headers.Authorization || req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer")) {
+    console.log(authHeader); // Bearer token
+    token = authHeader.split(" ")[1];
+    verify(token, process.env.ACCESS_TOKEN_SECERT, (err, decoded) => {
+      if (err) {
+        res.status(401);
+        throw new Error("User is not authorized");
+      }
+      req.user = decoded.user;
+      next();
+    });
+
+    if (!token) {
+      res.status(401);
+      throw new Error("User is not authorized or token is missing");
+    }
+  }
+});
